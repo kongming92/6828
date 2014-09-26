@@ -1,3 +1,9 @@
+Challenge problem:
+For the challenge problem I extended JOS with a number of memory utilities (the first three suggested).
+For the first -- showmappings, I iterated through the virtual addresses and displayed the contents of their page table entry, at one page intervals. The spacing of adjacent rows of the display is one page, although they are not page aligned.
+For the second, I took the virtual address, and set the last 12 bits of the page table entry of the virtual address to the permissions bits specified.
+For the last, I simply take the addresses as pointers and dereference them, getting access to the physical memory contents of those virtual addresses.
+
 Question 1:
 mystery_t should be uintptr_t. A virtual address should be returned by the function returning a pointer, and it doesn't make sense to dereference a phyaddr_t.
 
