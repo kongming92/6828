@@ -1,0 +1,77 @@
+Challenge problem:
+For the challenge problem I extended JOS with a number of memory utilities (the first three suggested).
+For the first -- showmappings, I iterated through the virtual addresses and displayed the contents of their page table entry, at one page intervals. The spacing of adjacent rows of the display is one page, although they are not page aligned.
+For the second, I took the virtual address, and set the last 12 bits of the page table entry of the virtual address to the permissions bits specified.
+For the last, I simply take the addresses as pointers and dereference them, getting access to the physical memory contents of those virtual addresses.
+
+Question 1:
+mystery_t should be uintptr_t. A virtual address should be returned by the function returning a pointer, and it doesn't make sense to dereference a phyaddr_t.
+
+Question 2:
+Entry       Base Virtual Address          Points to (logically)
+1023        0xffc00000                    Page table for top 4MB of phys mem
+977-1022    0xf4400000
+976         0xf4000000
+961-975     0xf0400000
+960         0xf0000000                    KERNBASE
+
+959         0xefc00000                    Top of Memory-mapped I/O
+957         0xef400000                    Current page table
+956         0xef000000                    R0 pages
+...
+2           0x00800000                    Beginning of program data/heap
+1           0x00400000
+0           0x00000000
+
+(qemu) info pg
+VPN range     Entry         Flags        Physical page
+[ef000-ef3ff]  PDE[3bc]     -------UWP
+  [ef000-ef020]  PTE[000-020] -------U-P 00119-00139
+[ef400-ef7ff]  PDE[3bd]     -------U-P
+  [ef7bc-ef7bc]  PTE[3bc]     -------UWP 003fd
+  [ef7bd-ef7bd]  PTE[3bd]     -------U-P 00118
+  [ef7bf-ef7bf]  PTE[3bf]     -------UWP 003fe
+  [ef7c0-ef7d0]  PTE[3c0-3d0] ----A--UWP 003ff 003fc 003fb 003fa 003f9 003f8 ..
+  [ef7d1-ef7ff]  PTE[3d1-3ff] -------UWP 003ec 003eb 003ea 003e9 003e8 003e7 ..
+[efc00-effff]  PDE[3bf]     -------UWP
+  [efff8-effff]  PTE[3f8-3ff] --------WP 0010d-00114
+[f0000-f03ff]  PDE[3c0]     ----A--UWP
+  [f0000-f0000]  PTE[000]     --------WP 00000
+  [f0001-f009f]  PTE[001-09f] ---DA---WP 00001-0009f
+  [f00a0-f00b7]  PTE[0a0-0b7] --------WP 000a0-000b7
+  [f00b8-f00b8]  PTE[0b8]     ---DA---WP 000b8
+  [f00b9-f00ff]  PTE[0b9-0ff] --------WP 000b9-000ff
+  [f0100-f0104]  PTE[100-104] ----A---WP 00100-00104
+  [f0105-f0113]  PTE[105-113] --------WP 00105-00113
+  [f0114-f0114]  PTE[114]     ---DA---WP 00114
+  [f0115-f0116]  PTE[115-116] --------WP 00115-00116
+  [f0117-f0118]  PTE[117-118] ---DA---WP 00117-00118
+  [f0119-f0119]  PTE[119]     ----A---WP 00119
+  [f011a-f011a]  PTE[11a]     ---DA---WP 0011a
+  [f011b-f0139]  PTE[11b-139] ----A---WP 0011b-00139
+  [f013a-f03bd]  PTE[13a-3bd] ---DA---WP 0013a-003bd
+  [f03be-f03ff]  PTE[3be-3ff] --------WP 003be-003ff
+[f0400-f3fff]  PDE[3c1-3cf] ----A--UWP
+  [f0400-f3fff]  PTE[000-3ff] ---DA---WP 00400-03fff
+[f4000-f43ff]  PDE[3d0]     ----A--UWP
+  [f4000-f40fe]  PTE[000-0fe] ---DA---WP 04000-040fe
+  [f40ff-f43ff]  PTE[0ff-3ff] --------WP 040ff-043ff
+[f4400-ffbff]  PDE[3d1-3fe] -------UWP
+  [f4400-ffbff]  PTE[000-3ff] --------WP 04400-0fbff
+[ffc00-fffff]  PDE[3ff]     -------UWP
+  [ffc00-ffffe]  PTE[000-3fe] --------WP 0fc00-0fffe
+
+
+Question 3:
+User programs cannot read or write the kernel's memory because the PTE_U bit is not set on those entries in the page table. If the user programs try to read or write into memory for which the PTE_U bit is not set, there will be a page fault.
+
+Question 4:
+256MB. KERNBASE is at 0xf0000000, so there is 0x10000000 bytes = 256 MB available to map all of physical memory for the kernel.
+
+Question 5:
+You have 256MB of memory. For each 4KB, need a PTE, so you have 64K PTEs. You also need 1 page directory. Each page table and the page directory is 4K.
+
+So the overhead is 4K (for the page directory) + 64K (PTEs) * 4 (bytes per PTE) = 260KB.
+
+Question 6:
+We transition to running at a high EIP at the jmp *%eax instruction in entry.S. We can continue to run at a low EIP because, when we start, we map both high addresses (KERNBASE to 4MB above) and low addresses (0 to 4MB) to (0 to 4MB) in physical memory. The transition is necessary because eventually, our kernel runs above KERNBASE, and we use the low addresses of memory for user applications.

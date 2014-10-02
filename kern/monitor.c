@@ -7,6 +7,10 @@
 #include <inc/assert.h>
 #include <inc/x86.h>
 
+// page table stuff
+#include <inc/mmu.h>
+#include <kern/pmap.h>
+
 #include <kern/console.h>
 #include <kern/monitor.h>
 #include <kern/kdebug.h>
@@ -25,6 +29,10 @@ struct Command {
 static struct Command commands[] = {
 	{ "help", "Display this list of commands", mon_help },
 	{ "kerninfo", "Display information about the kernel", mon_kerninfo },
+  { "backtrace", "Show the backtrace", mon_backtrace },
+  { "mappings", "Show virtual memory mappings", mon_mappings },
+  { "changeperm", "Change permissions of mappings", mon_changeperm },
+  { "dumpmem", "Dump contents of memory", mon_dumpmem }
 };
 #define NCOMMANDS (sizeof(commands)/sizeof(commands[0]))
 
@@ -59,10 +67,133 @@ mon_kerninfo(int argc, char **argv, struct Trapframe *tf)
 int
 mon_backtrace(int argc, char **argv, struct Trapframe *tf)
 {
-	// Your code here.
+  uint32_t *ebp = (uint32_t *)read_ebp();
+  struct Eipdebuginfo eipinfo;
+  cprintf("Stack backtrace:\n");
+  while (ebp) {
+    debuginfo_eip(ebp[1], &eipinfo);
+    uintptr_t offset = (uintptr_t)ebp[1] - eipinfo.eip_fn_addr;
+
+    cprintf("  ebp %08x  eip %08x  args %08x %08x %08x %08x %08x\n", ebp, ebp[1], ebp[2], ebp[3], ebp[4], ebp[5], ebp[6]);
+    cprintf("       %s:%d: ", eipinfo.eip_file, eipinfo.eip_line);
+    cprintf("%.*s", eipinfo.eip_fn_namelen, eipinfo.eip_fn_name);
+    cprintf("+%u\n", offset);
+
+    ebp = (uint32_t *)(ebp[0]);
+  }
 	return 0;
 }
 
+// Hex string to integer:
+// http://codereview.stackexchange.com/questions/42976/hexadecimal-to-integer-conversion-function
+static int htoi(const char *s, size_t *res)
+{
+  if ('0' == s[0] && ('x' == s[1] || 'X' == s[1]))
+    s += 2;
+
+  int c;
+  size_t rc;
+  for (rc = 0; '\0' != (c = *s); s++) {
+    if ( c >= 'a' && c <= 'f') {
+      c = c - 'a' + 10;
+    } else if (c >= 'A' && c <= 'F') {
+      c = c - 'A' + 10;
+    } else if (c >= '0' && c <= '9') {
+      c = c - '0';
+    } else {
+      return -1;
+    }
+    rc *= 16;
+    rc += (size_t) c;
+  }
+  *res = rc;
+  return 0;
+}
+
+// USAGE: mappings start_addr end_addr
+// start and end addrs must be hex (0x...)
+int mon_mappings(int argc, char **argv, struct Trapframe *tf) {
+	if (!argv[1] || !argv[2]) {
+		cprintf("usage: mappings start end\n");
+		cprintf("start and end must be valid hex virtual addresses (e.g. 0xFFFF)\n");
+		return 0;
+	}
+
+	size_t start;
+	size_t end;
+	htoi(argv[1], &start);
+	htoi(argv[2], &end);
+
+	if (start > end) {
+		cprintf("invalid range\n");
+		return 0;
+	}
+
+	cprintf("mappings\nstart: 0x%08x; end: 0x%08x\n", start, end);
+
+	size_t i;
+	pte_t *pte;
+	for (i = start; i <= end; i += PGSIZE) {
+		if ((pte = pgdir_walk(kern_pgdir, (void *)i, 0)) != NULL) {
+			cprintf("virtual address 0x%08x: ", i);
+			cprintf("physical address: 0x%08x; permissions: 0x%x\n", PTE_ADDR(*pte), *pte & 0xFFF);
+		}
+	}
+	return 0;
+}
+
+// USAGE: changeperm virtual_addr perm
+// virtual_addr and perm must be valid hex values (e.g. permission must be < 2^12)
+int mon_changeperm(int argc, char **argv, struct Trapframe *tf) {
+	if (!argv[1] || !argv[2]) {
+		cprintf("usage: changeperm virtual_addr perm\n");
+		return 0;
+	}
+
+	size_t va;
+	size_t perm;
+	htoi(argv[1], &va);
+	htoi(argv[2], &perm);
+
+	if (perm >= (1 << 12)) {
+		cprintf("permissions must be only in lower 12 bits!\n");
+		return 0;
+	}
+
+	pte_t *pte;
+	if ((pte = pgdir_walk(kern_pgdir, (void *)va, 0)) != NULL) {
+		cprintf("old permissions: 0x%x\n", *pte & 0xFFF);
+		cprintf("new permissions: 0x%x\n", perm);
+		*pte = PTE_ADDR(*pte) | perm;
+	} else {
+		cprintf("va 0x%08x not found!\n", va);
+	}
+	return 0;
+}
+
+// USAGE: dumpmem start end
+int mon_dumpmem(int argc, char **argv, struct Trapframe *tf) {
+	if (!argv[1] || !argv[2]) {
+		cprintf("usage: dumpmem start end (must be valid hex addresses)\n");
+		return 0;
+	}
+
+	size_t start;
+	size_t end;
+	htoi(argv[1], &start);
+	htoi(argv[2], &end);
+
+	if (start > end) {
+		cprintf("invalid range\n");
+		return 0;
+	}
+
+	size_t i;
+	for (i = start; i <= end; i++) {
+		cprintf("virtual address: 0x%08x; contents: 0x%08x\n", i, *(int *)i);
+	}
+	return 0;
+}
 
 
 /***** Kernel monitor command interpreter *****/
