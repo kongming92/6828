@@ -65,8 +65,77 @@ trap_init(void)
 	extern struct Segdesc gdt[];
 
 	// LAB 3: Your code here.
+	void int0();
+	void int1();
+	void int2();
+	void int3();
+	void int4();
+	void int5();
+	void int6();
+	void int7();
+	void int8();
+	void int9();
+	void int10();
+	void int11();
+	void int12();
+	void int13();
+	void int14();
+	void int15();
+	void int16();
+	void int17();
+	void int18();
+	void int19();
+	void int20();
+	void int21();
+	void int22();
+	void int23();
+	void int24();
+	void int25();
+	void int26();
+	void int27();
+	void int28();
+	void int29();
+	void int30();
+	void int31();
+	cprintf("stuff1: %08x\n", *(int*)&gdt[1]);
+	cprintf("stuff1: %08x\n", *(((int*)(&gdt[1])) + 1));
+	cprintf("stuff1: %08x\n", *(int*)&gdt[3]);
+	cprintf("stuff1: %08x\n", *(((int*)(&gdt[3])) + 1));
+	SETGATE(idt[0], 1, (1 << 3), int0, 0);
+	SETGATE(idt[1], 1, (1 << 3), int1, 0);
+	SETGATE(idt[2], 1, (1 << 3), int2, 0);
+	SETGATE(idt[3], 1, (1 << 3), int3, 0);
+	SETGATE(idt[4], 1, (1 << 3), int4, 0);
+	SETGATE(idt[5], 1, (1 << 3), int5, 0);
+	SETGATE(idt[6], 1, (1 << 3), int6, 0);
+	SETGATE(idt[7], 1, (1 << 3), int7, 0);
+	SETGATE(idt[8], 1, (1 << 3), int8, 0);
+	SETGATE(idt[9], 1, (1 << 3), int9, 0);
+	SETGATE(idt[10], 1, (1 << 3), int10, 0);
+	SETGATE(idt[11], 1, (1 << 3), int11, 0);
+	SETGATE(idt[12], 1, (1 << 3), int12, 0);
+	SETGATE(idt[13], 1, (1 << 3), int13, 0);
+	SETGATE(idt[14], 1, (1 << 3), int14, 0);
+	SETGATE(idt[15], 1, (1 << 3), int15, 0);
+	SETGATE(idt[16], 1, (1 << 3), int16, 0);
+	SETGATE(idt[17], 1, (1 << 3), int17, 0);
+	SETGATE(idt[18], 1, (1 << 3), int18, 0);
+	SETGATE(idt[19], 1, (1 << 3), int19, 0);
+	SETGATE(idt[20], 1, (1 << 3), int20, 0);
+	SETGATE(idt[21], 1, (1 << 3), int21, 0);
+	SETGATE(idt[22], 1, (1 << 3), int22, 0);
+	SETGATE(idt[23], 1, (1 << 3), int23, 0);
+	SETGATE(idt[24], 1, (1 << 3), int24, 0);
+	SETGATE(idt[25], 1, (1 << 3), int25, 0);
+	SETGATE(idt[26], 1, (1 << 3), int26, 0);
+	SETGATE(idt[27], 1, (1 << 3), int27, 0);
+	SETGATE(idt[28], 1, (1 << 3), int28, 0);
+	SETGATE(idt[29], 1, (1 << 3), int29, 0);
+	SETGATE(idt[30], 1, (1 << 3), int30, 0);
+	SETGATE(idt[31], 1, (1 << 3), int31, 0);
 
-	// Per-CPU setup 
+
+	// Per-CPU setup
 	trap_init_percpu();
 }
 
