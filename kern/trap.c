@@ -97,14 +97,11 @@ trap_init(void)
 	void int29();
 	void int30();
 	void int31();
-	cprintf("stuff1: %08x\n", *(int*)&gdt[1]);
-	cprintf("stuff1: %08x\n", *(((int*)(&gdt[1])) + 1));
-	cprintf("stuff1: %08x\n", *(int*)&gdt[3]);
-	cprintf("stuff1: %08x\n", *(((int*)(&gdt[3])) + 1));
+
 	SETGATE(idt[0], 1, (1 << 3), int0, 0);
 	SETGATE(idt[1], 1, (1 << 3), int1, 0);
 	SETGATE(idt[2], 1, (1 << 3), int2, 0);
-	SETGATE(idt[3], 1, (1 << 3), int3, 0);
+	SETGATE(idt[3], 1, (1 << 3), int3, 3);
 	SETGATE(idt[4], 1, (1 << 3), int4, 0);
 	SETGATE(idt[5], 1, (1 << 3), int5, 0);
 	SETGATE(idt[6], 1, (1 << 3), int6, 0);
@@ -212,14 +209,25 @@ trap_dispatch(struct Trapframe *tf)
 {
 	// Handle processor exceptions.
 	// LAB 3: Your code here.
+	switch(tf->tf_trapno) {
 
-	// Unexpected trap: The user process or the kernel has a bug.
-	print_trapframe(tf);
-	if (tf->tf_cs == GD_KT)
-		panic("unhandled trap in kernel");
-	else {
-		env_destroy(curenv);
-		return;
+	case T_PGFLT:
+		page_fault_handler(tf);
+		break;
+
+	case T_BRKPT:
+		monitor(tf);
+		break;
+
+	default:
+		// Unexpected trap: The user process or the kernel has a bug.
+		print_trapframe(tf);
+		if (tf->tf_cs == GD_KT)
+			panic("unhandled trap in kernel");
+		else {
+			env_destroy(curenv);
+			return;
+		}
 	}
 }
 
