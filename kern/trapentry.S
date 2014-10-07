@@ -79,6 +79,43 @@ TRAPHANDLER(int29, 29)
 TRAPHANDLER(int30, 30)
 TRAPHANDLER(int31, 31)
 
+TRAPHANDLER_NOEC(int_syscall, 48);
+
+.globl ints
+ints:
+	.long int0
+	.long int1
+	.long int2
+	.long int3
+	.long int4
+	.long int5
+	.long int6
+	.long int7
+	.long int8
+	.long int9
+	.long int10
+	.long int11
+	.long int12
+	.long int13
+	.long int14
+	.long int15
+	.long int16
+	.long int17
+	.long int18
+	.long int19
+	.long int20
+	.long int21
+	.long int22
+	.long int23
+	.long int24
+	.long int25
+	.long int26
+	.long int27
+	.long int28
+	.long int29
+	.long int30
+	.long int31
+
 /*
  * Lab 3: Your code here for _alltraps
  */
