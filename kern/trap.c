@@ -188,6 +188,9 @@ trap_dispatch(struct Trapframe *tf)
 	// LAB 3: Your code here.
 	switch(tf->tf_trapno) {
 	case T_PGFLT:
+		if ((tf->tf_cs & 3) == 0) {
+			panic("panic: kernel page fault\n");
+		}
 		page_fault_handler(tf);
 		break;
 	case T_BRKPT:
