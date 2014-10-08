@@ -79,7 +79,7 @@ TRAPHANDLER(int29, 29)
 TRAPHANDLER(int30, 30)
 TRAPHANDLER(int31, 31)
 
-TRAPHANDLER_NOEC(int_syscall, 48);
+TRAPHANDLER_NOEC(int_syscall, T_SYSCALL);
 
 .globl ints
 ints:
