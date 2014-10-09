@@ -32,7 +32,9 @@ static struct Command commands[] = {
   { "backtrace", "Show the backtrace", mon_backtrace },
   { "mappings", "Show virtual memory mappings", mon_mappings },
   { "changeperm", "Change permissions of mappings", mon_changeperm },
-  { "dumpmem", "Dump contents of memory", mon_dumpmem }
+  { "dumpmem", "Dump contents of memory", mon_dumpmem },
+  { "step", "Step through the next instruction", mon_step },
+  { "continue", "Continue execution", mon_continue }
 };
 #define NCOMMANDS (sizeof(commands)/sizeof(commands[0]))
 
@@ -193,6 +195,16 @@ int mon_dumpmem(int argc, char **argv, struct Trapframe *tf) {
 		cprintf("virtual address: 0x%08x; contents: 0x%08x\n", i, *(int *)i);
 	}
 	return 0;
+}
+
+int mon_step(int argc, char **argv, struct Trapframe *tf) {
+  tf->tf_eflags |= (1 << 8);
+  return -1;
+}
+
+int mon_continue(int argc, char **argv, struct Trapframe *tf) {
+  tf->tf_eflags &= ~(1 << 8);
+  return -1;
 }
 
 

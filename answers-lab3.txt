@@ -1,3 +1,8 @@
+Challenge: Implemented step/continue in the kernel monitor
+To implement step and continue in the kernel monitor, we take advantage of the EFLAGS register. Bit #8 of the EFLAGS register is the trap flag; when it is turned on, the processor will issue an int $1 after each instruction. We enter the kernel monitor by calling int $3, which is the breakpoint interrupt. From there if we call step, the kernel monitor will turn on the TF bit and return, the trap handler will resume running the current environment, and after one instruction, the processor will issue a debug interrupt, which will bring us back into the kernel monitor. To stop single-stepping, we simply use the continue function in the kernel monitor, which clears the TF bit in EFLAGS.
+
+To test it, there is a very simple program, user/teststep.c. Basically, it prints hello world, then does a breakpoint interrupt. At this point, you should see the kernel monitor. The first instruction is to load %ebx with the value 1; type in 'step' and notice that the value of %ebx is now one. The second instruction loads %ecx with 2. After stepping through these two instructions, type 'continue' and notice the final cprintf statement.
+
 Question 1:
 We want individual handlers so that we can push the individual exception number onto the stack. In trap.c, we need to map the idt entries to functions, and each function needs to be unique so that we can push the correct exception number in the call to the handler functions.
 
