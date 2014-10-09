@@ -65,48 +65,17 @@ trap_init(void)
 	extern struct Segdesc gdt[];
 
 	// LAB 3: Your code here.
-	void int0();
-	void int1();
-	void int2();
-	void int3();	// brkpt
-	void int4();
-	void int5();
-	void int6();
-	void int7();
-	void int8();
-	void int9();
-	void int10();
-	void int11();
-	void int12();
-	void int13();
-	void int14();
-	void int15();
-	void int16();
-	void int17();
-	void int18();
-	void int19();
-	void int20();
-	void int21();
-	void int22();
-	void int23();
-	void int24();
-	void int25();
-	void int26();
-	void int27();
-	void int28();
-	void int29();
-	void int30();
-	void int31();
-
-	void int_syscall();
-
 	extern size_t ints[]; // in trapentry.S (work like xv6/trap.c)
 	size_t i;
 	for (i = 0; i < 32; i++) {
 		SETGATE(idt[i], 1, GD_KT, ints[i], 0);
 	}
 
+	// allow user to call BRKPT
 	SETGATE(idt[T_BRKPT], 1, GD_KT, ints[T_BRKPT], 3);
+
+	// set up syscalls
+	void int_syscall();
 	SETGATE(idt[T_SYSCALL], 1, GD_KT, int_syscall, 3);
 
 	// Per-CPU setup
