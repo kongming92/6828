@@ -72,8 +72,20 @@ trap_init(void)
 	extern struct Segdesc gdt[];
 
 	// LAB 3: Your code here.
+	extern size_t ints[]; // in trapentry.S (work like xv6/trap.c)
+	size_t i;
+	for (i = 0; i < 32; i++) {
+		SETGATE(idt[i], 1, GD_KT, ints[i], 0);
+	}
 
-	// Per-CPU setup 
+	// allow user to call BRKPT
+	SETGATE(idt[T_BRKPT], 1, GD_KT, ints[T_BRKPT], 3);
+
+	// set up syscalls
+	void int_syscall();
+	SETGATE(idt[T_SYSCALL], 1, GD_KT, int_syscall, 3);
+
+	// Per-CPU setup
 	trap_init_percpu();
 }
 
@@ -186,14 +198,33 @@ trap_dispatch(struct Trapframe *tf)
 	// Handle clock interrupts. Don't forget to acknowledge the
 	// interrupt using lapic_eoi() before calling the scheduler!
 	// LAB 4: Your code here.
-
-	// Unexpected trap: The user process or the kernel has a bug.
-	print_trapframe(tf);
-	if (tf->tf_cs == GD_KT)
-		panic("unhandled trap in kernel");
-	else {
-		env_destroy(curenv);
-		return;
+	switch(tf->tf_trapno) {
+	case T_PGFLT:
+		page_fault_handler(tf);
+		break;
+	case T_DEBUG:		// if EFLAGS TF bit set
+	case T_BRKPT:
+		monitor(tf);
+		break;
+	case T_SYSCALL:
+		tf->tf_regs.reg_eax = syscall(
+			tf->tf_regs.reg_eax,
+			tf->tf_regs.reg_edx,
+			tf->tf_regs.reg_ecx,
+			tf->tf_regs.reg_ebx,
+			tf->tf_regs.reg_edi,
+			tf->tf_regs.reg_esi
+		);
+		break;
+	default:
+		// Unexpected trap: The user process or the kernel has a bug.
+		print_trapframe(tf);
+		if (tf->tf_cs == GD_KT)
+			panic("unhandled trap in kernel");
+		else {
+			env_destroy(curenv);
+			return;
+		}
 	}
 }
 
@@ -268,6 +299,9 @@ page_fault_handler(struct Trapframe *tf)
 	// Handle kernel-mode page faults.
 
 	// LAB 3: Your code here.
+	if ((tf->tf_cs & 3) == 0) {
+		panic("panic: kernel page fault\n");
+	}
 
 	// We've already handled kernel-mode exceptions, so if we get here,
 	// the page fault happened in user mode.
