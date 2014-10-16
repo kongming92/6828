@@ -544,13 +544,15 @@ env_run(struct Env *e)
 	//	e->env_tf to sensible values.
 
 	// LAB 3: Your code here.
-	if ((curenv != NULL) && (curenv->env_status == ENV_RUNNING)) {
-		curenv->env_status = ENV_RUNNABLE;
+	if (e != curenv) {
+		if (curenv != NULL && curenv->env_status == ENV_RUNNING) {
+			curenv->env_status = ENV_RUNNABLE;
+		}
+		curenv = e;
+		curenv->env_status = ENV_RUNNING;
+		curenv->env_runs++;
 	}
 
-	curenv = e;
-	curenv->env_status = ENV_RUNNING;
-	curenv->env_runs++;
 	lcr3(PADDR(curenv->env_pgdir));
 
 	unlock_kernel();

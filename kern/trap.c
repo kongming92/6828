@@ -75,15 +75,15 @@ trap_init(void)
 	extern size_t ints[]; // in trapentry.S (work like xv6/trap.c)
 	size_t i;
 	for (i = 0; i < 32; i++) {
-		SETGATE(idt[i], 1, GD_KT, ints[i], 0);
+		SETGATE(idt[i], 0, GD_KT, ints[i], 0);
 	}
 
 	// allow user to call BRKPT
-	SETGATE(idt[T_BRKPT], 1, GD_KT, ints[T_BRKPT], 3);
+	SETGATE(idt[T_BRKPT], 0, GD_KT, ints[T_BRKPT], 3);
 
 	// set up syscalls
 	void int_syscall();
-	SETGATE(idt[T_SYSCALL], 1, GD_KT, int_syscall, 3);
+	SETGATE(idt[T_SYSCALL], 0, GD_KT, int_syscall, 3);
 
 	// Per-CPU setup
 	trap_init_percpu();
