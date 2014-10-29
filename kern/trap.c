@@ -74,7 +74,7 @@ trap_init(void)
 	// LAB 3: Your code here.
 	extern size_t ints[]; // in trapentry.S (work like xv6/trap.c)
 	size_t i;
-	for (i = 0; i < 32; i++) {
+	for (i = 0; i < 48; i++) {
 		SETGATE(idt[i], 0, GD_KT, ints[i], 0);
 	}
 
@@ -217,6 +217,9 @@ trap_dispatch(struct Trapframe *tf)
 			tf->tf_regs.reg_esi
 		);
 		break;
+	case IRQ_OFFSET + IRQ_TIMER:
+		lapic_eoi();
+		sched_yield();
 	default:
 		// Unexpected trap: The user process or the kernel has a bug.
 		print_trapframe(tf);
