@@ -233,10 +233,12 @@ sys_page_map(envid_t srcenvid, void *srcva,
 	// case 2: va's not valid
 	if (((size_t)srcva >= UTOP) || (((size_t)srcva % PGSIZE) != 0) ||
 			((size_t)dstva >= UTOP) || (((size_t)dstva % PGSIZE) != 0)) {
+		cprintf("sys_page_map: va's not valid\n");
 		return -E_INVAL;
 	}
 	// case 4: perm not appropriate
 	if (!(perm & PTE_U) || !(perm & PTE_P) || (perm & ~PTE_SYSCALL)) {
+		cprintf("sys_page_map: perm is not valid\n");
 		return -E_INVAL;
 	}
 
@@ -245,19 +247,23 @@ sys_page_map(envid_t srcenvid, void *srcva,
 	struct Env *dstenv;
 	// case 1: envids not valid
 	if ((err = envid2env(srcenvid, &srcenv, 1)) < 0) {
+		cprintf("sys_page_map: src envid not valid\n");
 		return err;
 	}
 	if ((err = envid2env(dstenvid, &dstenv, 1)) < 0) {
+		cprintf("sys_page_map: dst envid not valid\n");
 		return err;
 	}
 	// case 3: srcva not mapped
 	pte_t *srcpte;
 	struct PageInfo *pinfo;
 	if ((pinfo = page_lookup(srcenv->env_pgdir, srcva, &srcpte)) == NULL) {
+		cprintf("sys_page_map: srcva not mapped\n");
 		return -E_INVAL;
 	}
 	// case 5: src is read only, dst wants write
 	if ((perm & PTE_W) && !(*srcpte & PTE_W)) {
+		cprintf("sys_page_map: src is read only\n");
 		return -E_INVAL;
 	}
 
