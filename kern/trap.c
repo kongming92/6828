@@ -346,8 +346,6 @@ page_fault_handler(struct Trapframe *tf)
 		print_trapframe(tf);
 		env_destroy(curenv);
 	}
-	// Check that exception stack is allocated and writable
-	user_mem_assert(curenv, (void *)(UXSTACKTOP - PGSIZE), PGSIZE, PTE_W);
 
 	// Are we already on the exception stack?
 	struct UTrapframe *utf;
@@ -357,11 +355,9 @@ page_fault_handler(struct Trapframe *tf)
 		utf = (struct UTrapframe *)(UXSTACKTOP - sizeof(struct UTrapframe));
 	}
 
+	// Check that exception stack is allocated and writable
 	// check no overflow
-	if ((size_t)utf < UXSTACKTOP - PGSIZE) {
-		cprintf("user pgfault overflow\n");
-		env_destroy(curenv);
-	}
+	user_mem_assert(curenv, (void *)utf, sizeof(struct UTrapframe), PTE_W);
 
 	utf->utf_esp = tf->tf_esp;
 	utf->utf_eflags = tf->tf_eflags;
