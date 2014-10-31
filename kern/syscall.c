@@ -239,6 +239,7 @@ sys_page_map(envid_t srcenvid, void *srcva,
 	// case 4: perm not appropriate
 	if (!(perm & PTE_U) || !(perm & PTE_P) || (perm & ~PTE_SYSCALL)) {
 		cprintf("sys_page_map: perm is not valid\n");
+		cprintf("sys_page_map: perm is %x\n", perm);
 		return -E_INVAL;
 	}
 

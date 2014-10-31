@@ -95,6 +95,69 @@ duppage(envid_t envid, unsigned pn)
 	return 0;
 }
 
+static int duppage_share(envid_t envid, unsigned pn) {
+	void *va = (void *)(pn * PGSIZE);
+	pte_t pte = uvpt[pn];
+	int perm;
+
+	if (!(pte & PTE_P) || !(pte & PTE_U)) {
+		panic("duppage_share: why is the page not present or not user?\n");
+	}
+
+	perm = PGOFF(pte) & (PTE_P | PTE_U | PTE_SYSCALL);
+	if (sys_page_map(0, va, envid, va, perm) < 0) {
+		panic("duppage_share: cannot map page\n");
+	}
+	return 0;
+}
+
+envid_t real_fork(bool share) {
+	set_pgfault_handler(pgfault);
+
+	int r;
+	envid_t envid;
+	if ((envid = sys_exofork()) < 0) {
+		return envid;
+	}
+	if (envid == 0) {		// child
+		// thisenv = &envs[ENVX(sys_getenvid())]; // comment out for challenge problem
+		return 0;
+	}
+
+	// parent here
+	size_t pn;
+	pde_t pde;
+	pte_t pte;
+
+	for (pn = UTEXT / PGSIZE; pn * PGSIZE < USTACKTOP; pn++) {
+		pde = uvpd[PDX(pn * PGSIZE)];
+		if ((pde & PTE_P) && (pde & PTE_U)) {
+			pte = uvpt[pn];
+			if ((pte & PTE_P) && (pte & PTE_U)) {
+				if (share && ((pn * PGSIZE) < (USTACKTOP - PGSIZE))) {
+					duppage_share(envid, pn);
+				} else {
+					if ((r = duppage(envid, pn)) < 0) {
+						return r;
+					}
+				}
+			}
+		}
+	}
+
+	if ((r = sys_page_alloc(envid, (void *)(UXSTACKTOP - PGSIZE), PTE_W | PTE_U | PTE_P)) < 0) {
+		return r;
+	}
+	if ((r = sys_env_set_pgfault_upcall(envid, thisenv->env_pgfault_upcall)) < 0) {
+		return r;
+	}
+	if ((r = sys_env_set_status(envid, ENV_RUNNABLE)) < 0) {
+		return r;
+	}
+
+	return envid;
+}
+
 //
 // User-level fork with copy-on-write.
 // Set up our page fault handler appropriately.
@@ -114,53 +177,12 @@ duppage(envid_t envid, unsigned pn)
 envid_t
 fork(void)
 {
-	// LAB 4: Your code here.
-	set_pgfault_handler(pgfault);
-
-	int r;
-	envid_t envid;
-	if ((envid = sys_exofork()) < 0) {
-		return envid;
-	}
-	if (envid == 0) {		// child
-		thisenv = &envs[ENVX(sys_getenvid())];
-		return 0;
-	}
-
-	// parent here
-	size_t pn;
-	pde_t pde;
-	pte_t pte;
-
-	for (pn = UTEXT / PGSIZE; pn * PGSIZE < USTACKTOP; pn++) {
-		pde = uvpd[PDX(pn * PGSIZE)];
-		if ((pde & PTE_P) && (pde & PTE_U)) {
-			pte = uvpt[pn];
-			if ((pte & PTE_P) && (pte & PTE_U)) {
-				if ((r = duppage(envid, pn)) < 0) {
-					return r;
-				}
-			}
-		}
-	}
-
-	if ((r = sys_page_alloc(envid, (void *)(UXSTACKTOP - PGSIZE), PTE_W | PTE_U | PTE_P)) < 0) {
-		return r;
-	}
-	if ((r = sys_env_set_pgfault_upcall(envid, thisenv->env_pgfault_upcall)) < 0) {
-		return r;
-	}
-	if ((r = sys_env_set_status(envid, ENV_RUNNABLE)) < 0) {
-		return r;
-	}
-
-	return envid;
+	return real_fork(0);
 }
 
 // Challenge!
 int
 sfork(void)
 {
-	panic("sfork not implemented");
-	return -E_INVAL;
+	return (int)real_fork(1);
 }
