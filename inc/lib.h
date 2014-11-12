@@ -28,9 +28,12 @@ void	umain(int argc, char **argv);
 
 // libmain.c or entry.S
 extern const char *binaryname;
-extern const volatile struct Env *thisenv;
+// extern const volatile struct Env *thisenv;
 extern const volatile struct Env envs[NENV];
 extern const volatile struct PageInfo pages[];
+
+extern const volatile struct Env *getenv();
+#define thisenv (getenv())
 
 // exit.c
 void	exit(void);
