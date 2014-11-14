@@ -22,16 +22,17 @@ void
 runcmd(char* s)
 {
 	char *argv[MAXARGS], *t, argv0buf[BUFSIZ];
-	int argc, c, i, r, p[2], fd, pipe_child;
+	int argc, c, i, r, p[2], fd, pipe_child, bg, multi;
 
 	pipe_child = 0;
 	gettoken(s, 0);
 
 again:
 	argc = 0;
+	bg = 0;
+	multi = 0;
 	while (1) {
 		switch ((c = gettoken(0, &t))) {
-
 		case 'w':	// Add an argument
 			if (argc == MAXARGS) {
 				cprintf("too many arguments\n");
@@ -108,11 +109,18 @@ again:
 				close(p[0]);
 				goto runit;
 			}
-			panic("| not implemented");
 			break;
 
 		case 0:		// String is complete
 			// Run the current command!
+			goto runit;
+
+		case '&':
+			bg = 1;
+			goto runit;
+
+		case ';':
+			multi = 1;
 			goto runit;
 
 		default:
@@ -155,11 +163,17 @@ runit:
 
 	// In the parent, close all file descriptors and wait for the
 	// spawned command to exit.
-	close_all();
+	if (multi) {
+		close_all_except_std();
+	} else {
+		close_all();
+	}
 	if (r >= 0) {
 		if (debug)
 			cprintf("[%08x] WAIT %s %08x\n", thisenv->env_id, argv[0], r);
-		wait(r);
+		if (!bg) {
+			wait(r);
+		}
 		if (debug)
 			cprintf("[%08x] wait finished\n", thisenv->env_id);
 	}
@@ -174,8 +188,13 @@ runit:
 			cprintf("[%08x] wait finished\n", thisenv->env_id);
 	}
 
+	if (multi) {
+		goto again;
+	}
+
 	// Done!
 	exit();
+
 }
 
 
