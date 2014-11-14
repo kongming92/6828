@@ -224,6 +224,13 @@ trap_dispatch(struct Trapframe *tf)
 	case IRQ_OFFSET + IRQ_TIMER:
 		lapic_eoi();
 		sched_yield();
+		break;
+	case IRQ_OFFSET + IRQ_KBD:
+		kbd_intr();
+		break;
+	case IRQ_OFFSET + IRQ_SERIAL:
+		serial_intr();
+		break;
 	default:
 		// Unexpected trap: The user process or the kernel has a bug.
 		print_trapframe(tf);

@@ -56,9 +56,7 @@ sys_env_destroy(envid_t envid)
 
 	if ((r = envid2env(envid, &e, 1)) < 0)
 		return r;
-  if (e == curenv)
-    cprintf("[%08x] exiting gracefully\n", curenv->env_id);
-  else
+  if (e != curenv)
     cprintf("[%08x] destroying %08x\n", curenv->env_id, e->env_id);
 	env_destroy(e);
 	return 0;
@@ -141,11 +139,9 @@ sys_env_set_trapframe(envid_t envid, struct Trapframe *tf)
 	// Remember to check whether the user has supplied us with a good
 	// address!
 	struct Env *env;
-	cprintf("start\n");
 	if (envid2env(envid, &env, 1) < 0) {
 		return -E_BAD_ENV;
 	}
-	cprintf("after envid2env\n");
 	tf->tf_cs |= 3;
 	tf->tf_eflags |= FL_IF;
 	env->env_tf = *tf;

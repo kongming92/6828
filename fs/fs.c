@@ -195,7 +195,6 @@ file_get_block(struct File *f, uint32_t filebno, char **blk)
   if ((r = file_block_walk(f, filebno, &ppdiskbno, 1)) < 0) {
   	return r;
   }
-  // cprintf("FILE GET BLOCK GOT %x", *ppdiskbno);
   if (*ppdiskbno == 0) {
   	if ((r = alloc_block()) < 0) {
   		return r;
