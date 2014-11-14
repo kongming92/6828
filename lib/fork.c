@@ -78,7 +78,12 @@ duppage(envid_t envid, unsigned pn)
 		panic("duppage: why is the page not present or not user?\n");
 	}
 
-	if ((pte & PTE_W) || (pte & PTE_COW)) {
+	if (pte & PTE_SHARE) {
+		perm = PGOFF(pte) & PTE_SYSCALL;
+		if ((r = sys_page_map(0, va, envid, va, perm)) < 0) {
+			return r;
+		}
+	} else if ((pte & PTE_W) || (pte & PTE_COW)) {
 		perm = PTE_COW | PTE_U | PTE_P;
 		if ((r = sys_page_map(0, va, envid, va, perm)) < 0) {
 			return r;
