@@ -62,8 +62,28 @@ alloc_block(void)
 	// super->s_nblocks blocks in the disk altogether.
 
 	// LAB 5: Your code here.
-	panic("alloc_block not implemented");
+	size_t i;
+	size_t j;
+	uint32_t *current;
+	uint32_t found = 0;
+
+	for (i = 0; i < super->s_nblocks / 32; i++) {
+		current = &bitmap[i];
+		if (*current) {
+			j = (i == 0) ? 2 : 0;		// don't allocate the 0th and 1st block
+			for (; j < 32; j++) {
+				if (*current & (1 << j)) {
+					*current &= ~(1 << j);
+					found = 32 * i + j;
+					flush_block((void *)current);
+					goto alloc_block_found;
+				}
+			}
+		}
+	}
 	return -E_NO_DISK;
+alloc_block_found:
+	return found;
 }
 
 // Validate the file system bitmap.
@@ -112,7 +132,7 @@ fs_init(void)
 	// Set "bitmap" to the beginning of the first bitmap block.
 	bitmap = diskaddr(2);
 	check_bitmap();
-	
+
 }
 
 // Find the disk block number slot for the 'filebno'th block in file 'f'.
