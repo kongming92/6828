@@ -1,0 +1,13 @@
+1. In boot/boot.S, we use the macro MPBOOTPHYS to translate the high addresses where the code is linked to run into physical addresses where the code is actually loaded. This is not necessary in boot/boot.S because, before the kernel is loaded, the link and load addresses are both at low addresses. When paging is switched on, we set it up in boot.S so that both 0 and KERNBASE are mapped to 0, so the addresses stay valid.
+
+2. It is possible that one CPU could modify the shared kernel stack in a way that the other CPU didn't know about. For example, if P0 running on CPU0 encountered an interrupt and entered kernel mode, it would push a trap frame onto the stack. Then P1, running on CPU1, also enters kernel mode and pushes a trap frame. If P0 then tries to pop the trap frame, it will pop P1's and not P0's trap frame.
+
+3. Even though the addressing context used by the MMU has changed, the virtual address to physical address mappings have not because we are in the kernel. For each environment, the "kernel section" of virtual addresses above KERNBASE are mapped to the same physical address.
+
+4. The when switching from one environment to another, we save the state of the registers so that the original environment can resume again some time in the future. In order to do so, we need to be able to repopulate the contents of the registers (for example, we need to know the instruction being executed). Whenever we switch environments, we must go through the kernel, so this saving of registers happens when we switch into kernel mode, namely when we push all the registers in _alltraps.
+
+Challenge problem:
+
+For the challenge problem, I implemented sfork. The implementation was much the same as fork, with the differences being in the way pages were copied. I created a new function, duppage_share() which, instead of checking for write permissions and setting the page to COW, it simply mapped the page with the same permissions as it has currently to the virtual address space of the target environment. This way, both environments can write to it, and changes will be reflected in both environments. I made sure to be careful to not map the normal stack in this way, and instead mapped the stack using the usual duppage() function which gives COW behavior.
+
+To resolve the issue with the thisenv pointer, I simply used a macro to set it to invoke the a function which returns &envs[ENVX(sys_getenvid())], so that we do not need to worry about the environments sharing the page that the thisenv variable sits in.

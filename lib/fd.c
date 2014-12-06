@@ -166,6 +166,13 @@ close_all(void)
 		close(i);
 }
 
+void close_all_except_std(void) {
+	int i;
+	for (i = 2; i < MAXFD; i++) {
+		close(i);
+	}
+}
+
 // Make file descriptor 'newfdnum' a duplicate of file descriptor 'oldfdnum'.
 // For instance, writing onto either file descriptor will affect the
 // file and the file offset of the other.

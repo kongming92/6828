@@ -1,0 +1,16 @@
+Challenge: Implemented step/continue in the kernel monitor
+To implement step and continue in the kernel monitor, we take advantage of the EFLAGS register. Bit #8 of the EFLAGS register is the trap flag; when it is turned on, the processor will issue an int $1 after each instruction. We enter the kernel monitor by calling int $3, which is the breakpoint interrupt. From there if we call step, the kernel monitor will turn on the TF bit and return, the trap handler will resume running the current environment, and after one instruction, the processor will issue a debug interrupt, which will bring us back into the kernel monitor. To stop single-stepping, we simply use the continue function in the kernel monitor, which clears the TF bit in EFLAGS.
+
+To test it, there is a very simple program, user/teststep.c. Basically, it prints hello world, then does a breakpoint interrupt. At this point, you should see the kernel monitor. The first instruction is to load %ebx with the value 1; type in 'step' and notice that the value of %ebx is now one. The second instruction loads %ecx with 2. After stepping through these two instructions, type 'continue' and notice the final cprintf statement.
+
+Question 1:
+We want individual handlers so that we can push the individual exception number onto the stack. In trap.c, we need to map the idt entries to functions, and each function needs to be unique so that we can push the correct exception number in the call to the handler functions.
+
+Question 2:
+I didn't have to do anything to make the program behave correctly. The code in user space tries to generate int $14, but code in user space isn't allowed to generate interrupts 0 to 31. Thus, when the user tries to do int $14, the actual interrupt will be 13, which is the general protection fault. We only want the processor to be able to generate page faults (when a real page fault happens) and don't want to let the user program generate them whenever it wants. Otherwise the user program could run code that potentially manipulates pages that we don't want them to be able to.
+
+Question 3:
+We need to set the DPL in breakpoint entry in the IDT to 3, because we want this interrupt to be call-able from user space. If we had set the DPL to 0, as with the other interrupts, then the calls from user space will not go through and trigger the interrupt that we want (the breakpoint exception) but rather the protection mechanism will trigger a general protection fault.
+
+Question 4:
+In the user/softint program, we try to call int $14, which tries to cause a page fault from user space. We want to protect against user space programs from being able to issue arbitrary interrupts that only the hardware (in the case of 1-31) should be able to triger.

@@ -12,6 +12,9 @@
 /qemu.log
 /gradelib.pyc
 /lab?-handin.tar.gz
+/lab?a-handin.tar.gz
+/lab?b-handin.tar.gz
+/lab?c-handin.tar.gz
 /lab?/
 /sol?/
 /myapi.key

@@ -1,0 +1,6 @@
+Question:
+No, you don't need to do anything else. Since this privilege setting is saved in the EFLAGS register, when switching between environments, the EFLAGS register will be saved in the environment's Trapframe, and will thus be reloaded before the environment resumes.
+
+Challenge:
+For my challenge I implemented & and ; in the shell. For backgrounding commands (&), I simply checked for the '&' symbol, and if it exists, don't wait for the child process to complete. Thus the shell returns immediately and is available to take a new command.
+For multiple commands, I checked for the ';' token and made the shell runcmd function go back to the top instead of returning when encountering a ';'. I also had to create a new close_all function. If we're going to execute multiple commands, we need to make sure that fd's 0 and 1 are open at the beginning of each command, so we cannot close those in the call to close_all.
