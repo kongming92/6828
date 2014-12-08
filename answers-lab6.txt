@@ -1,0 +1,7 @@
+1. When we transmit, we use the descriptor that the tail pointer points at. We copy the contents of the transmission to the tx_buf corresponding to the tail pointer, clear the DD flag in the descriptor, and set the RS and EOP flags. If the transmit ring is full, the driver will return a -E_TX_LIST_FULL error, causing the output function to loop and retry the transmission until it goes through.
+
+2. The receive implementation is similar to the transmit implementation -- we increment the tail pointer, copy the contents of the rx_buf to the corresponding buffer passed to the receive function, and clear the DD and EOP flags so that the descriptor may be used again. In the case that there is nothing to receive, the driver returns a -E_RX_EMPTY error. The input function will call sys_yield when this happens so that we do not just waste time spinning in a loop while waiting for a packet to receive.
+
+3. "This file came from JOS." and a marquee (wow it's been forever since I've seen those) with the text "Cheesy web page!"
+
+4. Definitely took me longer than expected -- around 20 hours to complete.

@@ -101,15 +101,15 @@ int e1000_tx_pkt(char *buf, int len) {
 
 int e1000_rx_pkt(char *buf) {
   uint32_t tail = (e1000_regs[E1000_RDT] + 1) % N_RX_DESC;
-  e1000_regs[E1000_RDT] = tail;
-
   if (!(rx_desc_list[tail].status & E1000_RXD_STAT_DD)) {
     return -E_RX_EMPTY;
   }
 
+  e1000_regs[E1000_RDT] = tail;
+
   int len = rx_desc_list[tail].len;
   memmove(buf, rx_buf[tail].buf, len);
-  rx_desc_list[tail].status &= E1000_RXD_STAT_DD;
-  rx_desc_list[tail].status &= E1000_RXD_STAT_EOP;
+  rx_desc_list[tail].status &= ~E1000_RXD_STAT_DD;
+  rx_desc_list[tail].status &= ~E1000_RXD_STAT_EOP;
   return len;
 }
