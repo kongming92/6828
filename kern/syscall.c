@@ -12,6 +12,7 @@
 #include <kern/console.h>
 #include <kern/sched.h>
 #include <kern/time.h>
+#include <kern/e1000.h>
 
 // Print a string to the system console.
 // The string is exactly 'len' characters long.
@@ -445,6 +446,13 @@ sys_time_msec(void)
 	return time_msec();
 }
 
+static int sys_net_transmit(char *buf, int len) {
+	if ((size_t)buf < UTOP) {
+		return e1000_tx_pkt(buf, len);
+	}
+	return -E_INVAL;
+}
+
 // Dispatches to the correct kernel function, passing the arguments.
 int32_t
 syscall(uint32_t syscallno, uint32_t a1, uint32_t a2, uint32_t a3, uint32_t a4, uint32_t a5)
@@ -485,6 +493,8 @@ syscall(uint32_t syscallno, uint32_t a1, uint32_t a2, uint32_t a3, uint32_t a4, 
 		return sys_env_set_trapframe((envid_t)a1, (struct Trapframe *)a2);
 	case SYS_time_msec:
 		return sys_time_msec();
+	case SYS_net_transmit:
+		return sys_net_transmit((char *)a1, (int)a2);
 	default:
 		return -E_INVAL;
 	}

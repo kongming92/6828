@@ -10,7 +10,6 @@ struct tx_desc tx_desc_list[N_TX_DESC] __attribute__ ((aligned (16)));
 struct tx_pkt tx_buf[N_TX_DESC];
 
 int e1000_init(struct pci_func *f) {
-
   pci_func_enable(f);
 
   e1000_regs = mmio_map_region(f->reg_base[0], f->reg_size[0]);
@@ -43,13 +42,6 @@ int e1000_init(struct pci_func *f) {
 
   e1000_regs[E1000_TIPG] = ((0x4 << 20) | (0x6 << 10) | 0xA);
 
-  // TEST
-  char test[3];
-  test[0] = 12;
-  test[1] = 22;
-  test[2] = 32;
-  e1000_tx_pkt(test, 3);
-
   return 1;
 }
 
@@ -70,10 +62,6 @@ int e1000_tx_pkt(char *buf, int len) {
   tx_desc_list[tail].cmd |= E1000_TXD_CMD_RS;
   tx_desc_list[tail].cmd |= E1000_TXD_CMD_EOP;
 
-  cprintf("CMD: %x\n", tx_desc_list[tail].cmd);
-
   e1000_regs[E1000_TDT] = (tail + 1) % N_TX_DESC;
-
-  cprintf("success\n");
   return 0;
 }
