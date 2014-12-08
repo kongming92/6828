@@ -10,6 +10,7 @@
 
 #define BUFFSIZE 512
 #define MAXPENDING 5	// Max connection requests
+#define MAX_PACKET_SIZE 1518
 
 struct http_request {
 	int sock;
@@ -77,7 +78,14 @@ static int
 send_data(struct http_request *req, int fd)
 {
 	// LAB 6: Your code here.
-	panic("send_data not implemented");
+	char buf[MAX_PACKET_SIZE];
+	if (read(fd, buf, MAX_PACKET_SIZE) < 0) {
+		return -1;
+	}
+	if (write(req->sock, buf, MAX_PACKET_SIZE) < 0) {
+		return -1;
+	}
+	return 0;
 }
 
 static int
@@ -223,7 +231,23 @@ send_file(struct http_request *req)
 	// set file_size to the size of the file
 
 	// LAB 6: Your code here.
-	panic("send_file not implemented");
+	if ((fd = open(req->url, O_RDONLY)) < 0) {
+		send_error(req, 404);
+		return fd;
+	}
+
+	struct Stat st;
+	if ((r = fstat(fd, &st)) < 0) {
+		goto end;
+	}
+
+	if (st.st_isdir) {
+		send_error(req, 404);
+		close(fd);
+		return -1;
+	}
+
+	file_size = st.st_size;
 
 	if ((r = send_header(req, 200)) < 0)
 		goto end;
