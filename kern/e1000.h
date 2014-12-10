@@ -24,6 +24,10 @@
 #define E1000_RDT     0x02818 / 4  /* RX Descriptor Tail - RW */
 #define E1000_RCTL    0x00100 / 4  /* RX Control - RW */
 
+#define E1000_EERD    0x00014 / 4  /* EEPROM Read - RW */
+#define E1000_EEPROM_RW_REG_START  1    /* First bit for telling part to start operation */
+#define E1000_EEPROM_RW_REG_DONE   0x10 /* Offset to READ/WRITE done bit */
+
 /* Transmit bit descriptions */
 #define E1000_TXD_STAT_DD     0x00000001 /* Descriptor Done */
 #define E1000_TXD_CMD_EOP     0x01 /* End of Packet */

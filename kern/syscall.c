@@ -460,6 +460,11 @@ static int sys_net_recv(char *buf) {
 	return -E_INVAL;
 }
 
+static void sys_mac_addr(uint64_t *addr) {
+	*addr = e1000_regs[E1000_RAH] & ~(1 << 31);
+	*addr = (*addr << 32) | e1000_regs[E1000_RAL];
+}
+
 // Dispatches to the correct kernel function, passing the arguments.
 int32_t
 syscall(uint32_t syscallno, uint32_t a1, uint32_t a2, uint32_t a3, uint32_t a4, uint32_t a5)
@@ -504,6 +509,9 @@ syscall(uint32_t syscallno, uint32_t a1, uint32_t a2, uint32_t a3, uint32_t a4, 
 		return sys_net_transmit((char *)a1, (int)a2);
 	case SYS_net_recv:
 		return sys_net_recv((char *)a1);
+	case SYS_mac_addr:
+		sys_mac_addr((uint64_t *)a1);
+		return 0;
 	default:
 		return -E_INVAL;
 	}

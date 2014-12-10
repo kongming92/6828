@@ -130,3 +130,7 @@ int sys_net_transmit(char *buf, int len) {
 int sys_net_recv(char *buf) {
 	return syscall(SYS_net_recv, 0, (uint32_t)buf, 0, 0, 0, 0);
 }
+
+void sys_mac_addr(uint64_t *addr) {
+	syscall(SYS_mac_addr, 0, (uint32_t)addr, 0, 0, 0, 0);
+}

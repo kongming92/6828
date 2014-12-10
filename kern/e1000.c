@@ -12,6 +12,8 @@ struct tx_pkt tx_buf[N_TX_DESC];
 struct rx_desc rx_desc_list[N_RX_DESC] __attribute__ ((aligned (16)));
 struct rx_pkt rx_buf[N_RX_DESC];
 
+void get_mac(uint32_t *high, uint32_t *low);
+
 int e1000_init(struct pci_func *f) {
   pci_func_enable(f);
   e1000_regs = mmio_map_region(f->reg_base[0], f->reg_size[0]);
@@ -53,9 +55,14 @@ int e1000_init(struct pci_func *f) {
   }
 
   // Initialize RX
-  e1000_regs[E1000_RAL] = E1000_MAC_ADDR & 0x0000FFFFFFFF;
-  e1000_regs[E1000_RAH] = E1000_MAC_ADDR >> 32;
-  e1000_regs[E1000_RAH] |= 1 << 31;  // address valid bit
+  uint32_t high, low;
+  get_mac(&high, &low);
+  e1000_regs[E1000_RAL] = low;
+  e1000_regs[E1000_RAH] = (1 << 31) | high;
+
+  // e1000_regs[E1000_RAL] = E1000_MAC_ADDR & 0x0000FFFFFFFF;
+  // e1000_regs[E1000_RAH] = E1000_MAC_ADDR >> 32;
+  // e1000_regs[E1000_RAH] |= 1 << 31;  // address valid bit
 
   e1000_regs[E1000_MTA] = 0x0;
 
@@ -76,6 +83,20 @@ int e1000_init(struct pci_func *f) {
   e1000_regs[E1000_RCTL] |= E1000_RCTL_SECRC;
 
   return 1;
+}
+
+void get_mac(uint32_t *high, uint32_t *low) {
+  e1000_regs[E1000_EERD] = 0x0 | E1000_EEPROM_RW_REG_START;
+  while (!(e1000_regs[E1000_EERD] & E1000_EEPROM_RW_REG_DONE));  // wait
+  *low = e1000_regs[E1000_EERD] >> 16;
+
+  e1000_regs[E1000_EERD] = 0x100 | E1000_EEPROM_RW_REG_START;
+  while (!(e1000_regs[E1000_EERD] & E1000_EEPROM_RW_REG_DONE));
+  *low |= (e1000_regs[E1000_EERD] >> 16) << 16;   // clear bottom 16
+
+  e1000_regs[E1000_EERD] = 0x200 | E1000_EEPROM_RW_REG_START;
+  while (!(e1000_regs[E1000_EERD] & E1000_EEPROM_RW_REG_DONE));
+  *high = e1000_regs[E1000_EERD] >> 16;
 }
 
 int e1000_tx_pkt(char *buf, int len) {
